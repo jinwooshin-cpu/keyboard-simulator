@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>커스텀 키보드 견적 시뮬레이터 — GTGear</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f7f6f3; --surface: #ffffff;
+    --border: rgba(0,0,0,0.1); --border-strong: rgba(0,0,0,0.2);
+    --text: #1a1a1a; --text-muted: #6b6b6b; --text-hint: #aaa;
+    --accent: #2563eb; --accent-bg: #eff6ff;
+    --success: #16a34a; --success-bg: #f0fdf4;
+    --warning-bg: #fffbeb; --warning: #92400e;
+    --purple: #7c3aed; --purple-bg: #f5f3ff;
+    --teal: #0d9488; --teal-bg: #f0fdfa;
+    --orange: #ea580c; --orange-bg: #fff7ed;
+    --radius: 12px; --radius-sm: 8px;
+    --fs-base: 15px; --fs-sm: 13px; --fs-xs: 11px;
+    --fs-metric: 20px; --fs-header: 18px;
+    --pad-card: 22px; --gap: 16px;
+  }
+  @media (min-width: 1920px) {
+    :root { --fs-base: 22px; --fs-sm: 19px; --fs-xs: 15px; --fs-metric: 32px; --fs-header: 26px; --pad-card: 38px; --gap: 24px; --radius: 16px; --radius-sm: 10px; }
+  }
+  @media (max-width: 600px) {
+    :root { --fs-base: 14px; --fs-sm: 12px; --fs-xs: 10px; --fs-metric: 16px; --fs-header: 15px; --pad-card: 14px; --gap: 10px; }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); font-size: var(--fs-base); line-height: 1.6; }
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px var(--pad-card); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+  header h1 { font-size: var(--fs-header); font-weight: 700; }
+  header p { font-size: var(--fs-sm); color: var(--text-muted); }
+  .screen-tag { font-size: var(--fs-xs); font-weight: 700; padding: 4px 10px; border-radius: 20px; background: var(--accent-bg); color: var(--accent); }
+  .container { max-width: 1060px; margin: 0 auto; padding: var(--gap) 20px; display: flex; flex-direction: column; gap: var(--gap); }
+  @media (min-width: 1920px) { .container { max-width: 1640px; padding: var(--gap) 40px; } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--pad-card); }
+  .card-title { font-size: var(--fs-xs); font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  @media (max-width: 600px) { .grid3 { grid-template-columns: 1fr 1fr; } }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: var(--fs-sm); color: var(--text-muted); font-weight: 600; }
+  .field input, .field select { font-size: var(--fs-base); padding: 9px 12px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: #fafafa; color: var(--text); width: 100%; }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--accent); background: #fff; }
+  .products-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+  @media (max-width: 700px) { .products-grid { grid-template-columns: 1fr; } }
+  .product-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .product-header { padding: 14px var(--pad-card) 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+  .product-color { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .product-title { font-size: var(--fs-base); font-weight: 700; }
+  .product-subtitle { font-size: var(--fs-xs); color: var(--text-muted); margin-top: 1px; }
+  .product-body { padding: 14px var(--pad-card); }
+  .item-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+  .item-row { display: grid; grid-template-columns: 1fr 90px; gap: 8px; align-items: center; }
+  .item-label { font-size: var(--fs-sm); color: var(--text-muted); }
+  .item-input { font-size: var(--fs-sm); padding: 6px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: #fafafa; color: var(--text); text-align: right; width: 100%; }
+  .item-input:focus { outline: none; border-color: var(--accent); background: #fff; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+  .result-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .mini-metric { background: var(--bg); border-radius: var(--radius-sm); padding: 10px 12px; }
+  .mini-label { font-size: var(--fs-xs); color: var(--text-muted); margin-bottom: 3px; font-weight: 600; }
+  .mini-value { font-size: var(--fs-metric); font-weight: 700; color: var(--text); }
+  .mini-value.green { color: var(--success); }
+  .mini-value.blue { color: var(--accent); }
+  .summary-card { background: var(--surface); border: 2px solid var(--accent); border-radius: var(--radius); padding: var(--pad-card); }
+  .summary-title { font-size: var(--fs-sm); font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; }
+  .summary-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+  .summary-table th { text-align: left; font-size: var(--fs-xs); font-weight: 700; color: var(--text-muted); padding: 7px 10px; border-bottom: 1px solid var(--border); background: var(--bg); }
+  .summary-table th:not(:first-child) { text-align: right; }
+  .summary-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); }
+  .summary-table td:not(:first-child) { text-align: right; }
+  .summary-table tr.total td { font-weight: 700; font-size: var(--fs-base); background: var(--accent-bg); color: var(--accent); border-top: 2px solid var(--accent); border-bottom: none; }
+  .summary-table .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle; }
+  .btn-row { display: flex; gap: 10px; }
+  @media (max-width: 600px) { .btn-row { flex-direction: column; } }
+  .btn { flex: 1; padding: 13px; font-size: var(--fs-base); font-weight: 700; cursor: pointer; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); transition: background .15s; }
+  .btn:hover { background: var(--bg); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { background: #1d4ed8; }
+  @media print { .no-print { display: none !important; } body { background: #fff; } .container { max-width: 100%; padding: 0; } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>커스텀 키보드 견적 시뮬레이터</h1>
+    <p>Keychron B2B — 품목별 개별 견적</p>
+  </div>
+  <span class="screen-tag" id="screen-tag">PC</span>
+</header>
+<div class="container">
+  <div class="card">
+    <div class="card-title">공통 설정</div>
+    <div class="grid3">
+      <div class="field"><label>수량 (개)</label><input id="qty" type="number" value="500" step="10" min="1"/></div>
+      <div class="field"><label>적용 환율 (KRW/USD)</label><input id="fx" type="number" value="1600" step="1"/></div>
+      <div class="field"><label>VAT</label>
+        <select id="vat">
+          <option value="1.1">포함 (10%)</option>
+          <option value="1">미포함</option>
+        </select>
+      </div>
+      <div class="field"><label>프로젝트명</label><input id="proj" type="text" value="네이버 웹툰 커스텀 키보드"/></div>
+      <div class="field"><label>클라이언트</label><input id="client" type="text" value="Naver Webtoon"/></div>
+      <div class="field"><label>리드타임 (일)</label><input id="lead" type="number" value="45" step="5"/></div>
+    </div>
+  </div>
+  <div class="products-grid">
+    <div class="product-card">
+      <div class="product-header">
+        <div class="product-color" style="background:#2563eb"></div>
+        <div><div class="product-title">키보드 세트</div><div class="product-subtitle">기본 사입가 + 키캡 Dye-sub 포함</div></div>
+      </div>
+      <div class="product-body">
+        <div class="item-grid">
+          <div class="item-row"><div class="item-label">기본 사입가 (USD)</div><input class="item-input" id="kb-base" type="number" value="33.53" step="0.01"/></div>
+          <div class="item-row"><div class="item-label">키캡 Dye-sub (USD)</div><input class="item-input" id="kb-dyesub" type="number" value="10" step="0.5"/></div>
+          <div class="item-row"><div class="item-label">마진율 (%)</div><input class="item-input" id="kb-margin" type="number" value="10" step="1" min="0" max="99"/></div>
+        </div>
+        <hr class="divider">
+        <div class="result-row">
+          <div class="mini-metric"><div class="mini-label">원가 (USD)</div><div class="mini-value" id="kb-cost">$0</div></div>
+          <div class="mini-metric"><div class="mini-label">제안가 (USD)</div><div class="mini-value blue" id="kb-sell-usd">$0</div></div>
+          <div class="mini-metric"><div class="mini-label">제안가 (KRW)</div><div class="mini-value green" id="kb-sell-krw">₩0</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="product-card">
+      <div class="product-header">
+        <div class="product-color" style="background:#7c3aed"></div>
+        <div><div class="product-title">아티산 키캡</div><div class="product-subtitle">개당 별도 견적</div></div>
+      </div>
+      <div class="product-body">
+        <div class="item-grid">
+          <div class="item-row"><div class="item-label">사입가 (USD)</div><input class="item-input" id="art-base" type="number" value="5" step="0.5"/></div>
+          <div class="item-row" style="visibility:hidden"><div class="item-label">-</div><input class="item-input" type="number" value="0"/></div>
+          <div class="item-row"><div class="item-label">마진율 (%)</div><input class="item-input" id="art-margin" type="number" value="10" step="1" min="0" max="99"/></div>
+        </div>
+        <hr class="divider">
+        <div class="result-row">
+          <div class="mini-metric"><div class="mini-label">원가 (USD)</div><div class="mini-value" id="art-cost">$0</div></div>
+          <div class="mini-metric"><div class="mini-label">제안가 (USD)</div><div class="mini-value" style="color:#7c3aed" id="art-sell-usd">$0</div></div>
+          <div class="mini-metric"><div class="mini-label">제안가 (KRW)</div><div class="mini-value green" id="art-sell-krw">₩0</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="product-card">
+      <div class="product-header">
+        <div class="product-color" style="background:#0d9488"></div>
+        <div><div class="product-title">아크릴 팜레스트</div><div class="product-subtitle">개당 별도 견적</div></div>
+      </div>
+      <div class="product-body">
+        <div class="item-grid">
+          <div class="item-row"><div class="item-label">사입가 (USD)</div><input class="item-input" id="palm-base" type="number" value="6.5" step="0.5"/></div>
+          <div class="item-row" style="visibility:hidden"><div class="item-label">-</div><input class="item-input" type="number" value="0"/></div>
+          <div class="item-row"><div class="item-label">마진율 (%)</div><input class="item-input" id="palm-margin" type="number" value="10" step="1" min="0" max="99"/></div>
+        </div>
+        <hr class="divider">
+        <div class="result-row">
+          <div class="mini-metric"><div class="mini-label">원가 (USD)</div><div class="mini-value" id="palm-cost">$0</div></div>
+          <div class="mini-metric"><div class="mini-label">제안가 (USD)</div><div class="mini-value" style="color:#0d9488" id="palm-sell-usd">$0</div></div>
+          <div class="mini-metric"><div class="mini-label">제안가 (KRW)</div><div class="mini-value green" id="palm-sell-krw">₩0</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="product-card">
+      <div class="product-header">
+        <div class="product-color" style="background:#ea580c"></div>
+        <div><div class="product-title">800×400mm 마우스패드</div><div class="product-subtitle">전면인쇄 별도 견적</div></div>
+      </div>
+      <div class="product-body">
+        <div class="item-grid">
+          <div class="item-row"><div class="item-label">사입가 (USD)</div><input class="item-input" id="pad-base" type="number" value="5.3" step="0.1"/></div>
+          <div class="item-row" style="visibility:hidden"><div class="item-label">-</div><input class="item-input" type="number" value="0"/></div>
+          <div class="item-row"><div class="item-label">마진율 (%)</div><input class="item-input" id="pad-margin" type="number" value="10" step="1" min="0" max="99"/></div>
+        </div>
+        <hr class="divider">
+        <div class="result-row">
+          <div class="mini-metric"><div class="mini-label">원가 (USD)</div><div class="mini-value" id="pad-cost">$0</div></div>
+          <div class="mini-metric"><div class="mini-label">제안가 (USD)</div><div class="mini-value" style="color:#ea580c" id="pad-sell-usd">$0</div></div>
+          <div class="mini-metric"><div class="mini-label">제안가 (KRW)</div><div class="mini-value green" id="pad-sell-krw">₩0</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-title">전체 견적 요약</div>
+    <table class="summary-table">
+      <thead><tr><th>품목</th><th>원가 (USD)</th><th>제안가 (USD)</th><th>제안가 (KRW)</th><th>총액 KRW (×수량)</th></tr></thead>
+      <tbody id="summary-body"></tbody>
+    </table>
+    <div style="margin-top:16px;padding:12px 14px;background:var(--warning-bg);border-radius:var(--radius-sm);font-size:var(--fs-sm);color:var(--warning)">
+      💡 리드타임 <strong id="lead-out">45</strong>일 · 수량 <strong id="qty-out">500</strong>개 · 결제조건 T/T 30% 선금 + 70% 잔금
+    </div>
+  </div>
+  <div class="btn-row no-print">
+    <button class="btn primary" onclick="window.print()">견적서 인쇄 / PDF</button>
+    <button class="btn" onclick="copySummary()">요약 복사</button>
+    <button class="btn" onclick="if(confirm('초기화할까요?'))location.reload()">초기화</button>
+  </div>
+</div>
+<script>
+const PRODUCTS = [
+  { id: 'kb',   label: '키보드 세트 (키보드 + Dye-sub)', color: '#2563eb', costIds: ['kb-base','kb-dyesub'], marginId: 'kb-margin' },
+  { id: 'art',  label: '아티산 키캡',                   color: '#7c3aed', costIds: ['art-base'],           marginId: 'art-margin' },
+  { id: 'palm', label: '아크릴 팜레스트',               color: '#0d9488', costIds: ['palm-base'],          marginId: 'palm-margin' },
+  { id: 'pad',  label: '800×400mm 마우스패드',          color: '#ea580c', costIds: ['pad-base'],           marginId: 'pad-margin' },
+];
+function fmt(n) { return Math.round(n).toLocaleString('ko-KR'); }
+function fmtU(n) { return '$' + n.toFixed(2); }
+function setScreenTag() {
+  const el = document.getElementById('screen-tag');
+  const w = window.innerWidth;
+  if (w >= 1920) { el.textConten
